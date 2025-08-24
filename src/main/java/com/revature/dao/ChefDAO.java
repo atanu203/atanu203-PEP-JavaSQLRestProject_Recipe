@@ -31,7 +31,7 @@ public class ChefDAO {
      * @param connectionUtil the utility used to connect to the database
      */
     public ChefDAO(ConnectionUtil connectionUtil) {
-        
+        this.connectionUtil = connectionUtil;
     }
 
     /**
@@ -40,7 +40,16 @@ public class ChefDAO {
      * @return a list of all Chef objects
      */
     public List<Chef> getAllChefs() {
-        return null;
+        List<Chef> chefs = new ArrayList<>();
+        String sql = "SELECT * FROM Chef";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+            chefs = mapRows(rs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return chefs;
     }
 
     /**
@@ -50,6 +59,14 @@ public class ChefDAO {
      * @return a paginated list of Chef objects
      */
     public Page<Chef> getAllChefs(PageOptions pageOptions) {
+        String sql = "SELECT * FROM Chef";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.createStatement();
+             var rs = stmt.executeQuery(sql)) {
+            return pageResults(rs, pageOptions);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -60,6 +77,18 @@ public class ChefDAO {
      * @return the Chef object, if found.
      */
     public Chef getChefById(int id) {
+        String sql = "SELECT * FROM Chef WHERE id = ?";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapSingleRow(rs);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -70,6 +99,25 @@ public class ChefDAO {
      * @return the unique identifier of the created Chef.
      */
     public int createChef(Chef chef) {
+        String sql = "INSERT INTO Chef (username, email, password, is_admin) VALUES (?, ?, ?, ?)";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, chef.getUsername());
+            stmt.setString(2, chef.getEmail());
+            stmt.setString(3, chef.getPassword());
+            stmt.setBoolean(4, chef.isAdmin());
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) throw new SQLException("Creating chef failed, no rows affected.");
+            try (var keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    int id = keys.getInt(1);
+                    chef.setId(id);
+                    return id;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return 0;
     }
 
@@ -79,7 +127,18 @@ public class ChefDAO {
      * @param chef the Chef object containing updated information.
      */
     public void updateChef(Chef chef) {
-        
+        String sql = "UPDATE Chef SET username = ?, email = ?, password = ?, is_admin = ? WHERE id = ?";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, chef.getUsername());
+            stmt.setString(2, chef.getEmail());
+            stmt.setString(3, chef.getPassword());
+            stmt.setBoolean(4, chef.isAdmin());
+            stmt.setInt(5, chef.getId());
+            stmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -88,7 +147,14 @@ public class ChefDAO {
      * @param chef the Chef object to be deleted.
      */
     public void deleteChef(Chef chef) {
-        
+        String sql = "DELETE FROM Chef WHERE id = ?";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, chef.getId());
+            stmt.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -98,7 +164,18 @@ public class ChefDAO {
      * @return a list of Chef objects that match the search term.
      */
     public List<Chef> searchChefsByTerm(String term) {
-        return null;
+        List<Chef> chefs = new ArrayList<>();
+        String sql = "SELECT * FROM Chef WHERE username LIKE ?";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + term + "%");
+            try (var rs = stmt.executeQuery()) {
+                chefs = mapRows(rs);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return chefs;
     }
 
     /**
@@ -109,6 +186,16 @@ public class ChefDAO {
      * @return a paginated list of Chef objects that match the search term
      */
     public Page<Chef> searchChefsByTerm(String term, PageOptions pageOptions) {
+        String sql = "SELECT * FROM Chef WHERE username LIKE ?";
+        try (var conn = connectionUtil.getConnection();
+             var stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, "%" + term + "%");
+            try (var rs = stmt.executeQuery()) {
+                return pageResults(rs, pageOptions);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -173,7 +260,7 @@ public class ChefDAO {
      */
     private List<Chef> sliceList(List<Chef> list, int start, int end) {
         List<Chef> sliced = new ArrayList<>();
-        for (int i = start; i < end; i++) {
+        for (int i = start; i < end && i < list.size(); i++) {
             sliced.add(list.get(i));
         }
         return sliced;

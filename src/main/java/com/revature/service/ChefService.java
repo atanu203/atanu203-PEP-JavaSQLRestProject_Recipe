@@ -28,7 +28,7 @@ public class ChefService {
      * @param chefDao the ChefDao to be used by this service for data access
      */
     public ChefService(ChefDAO chefDAO) {
-        
+        this.chefDAO = chefDAO;
     }
 
     /**
@@ -39,7 +39,7 @@ public class ChefService {
      *         an empty Optional if not found
      */
     public Optional<Chef> findChef(int id) {
-        return null; 
+        return Optional.ofNullable(chefDAO.getChefById(id));
     }
 
     /**
@@ -50,7 +50,12 @@ public class ChefService {
      * @param chef the Chef entity to be saved or updated
      */
     public void saveChef(Chef chef) {
-        
+        if (chef.getId() == 0) {
+            int id = chefDAO.createChef(chef);
+            chef.setId(id);
+        } else {
+            chefDAO.updateChef(chef);
+        }
     }
 
     
@@ -62,7 +67,11 @@ public class ChefService {
      * @return a list of Chefs matching the search criteria, or all Chefs if term is null
      */
     public List<Chef> searchChefs(String term) {
-        return null;
+        if (term == null || term.isEmpty()) {
+            return chefDAO.getAllChefs();
+        } else {
+            return chefDAO.searchChefsByTerm(term);
+        }
     }
 
     /**
@@ -71,7 +80,10 @@ public class ChefService {
      * @param id the unique identifier of the Chef to be deleted
      */
     public void deleteChef(int id) {
-        
+        Chef chef = chefDAO.getChefById(id);
+        if (chef != null) {
+            chefDAO.deleteChef(chef);
+        }
     }
 
     /**
@@ -86,7 +98,12 @@ public class ChefService {
      */
 	
     public Page<Chef> searchChefs(String term, int page, int pageSize, String sortBy, String sortDirection) {
-        return null;
+        com.revature.util.PageOptions pageOptions = new com.revature.util.PageOptions(page, pageSize);
+        if (term == null || term.isEmpty()) {
+            return chefDAO.getAllChefs(pageOptions);
+        } else {
+            return chefDAO.searchChefsByTerm(term, pageOptions);
+        }
     }
 }
 
