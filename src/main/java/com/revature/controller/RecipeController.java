@@ -30,7 +30,8 @@ public class RecipeController {
      * * @param authService the service used to manage authentication-related operations
      */
     public RecipeController(RecipeService recipeService, AuthenticationService authService) {
-        
+    this.recipeService = recipeService;
+    this.authService = authService;
     }
 
     /**
@@ -39,7 +40,18 @@ public class RecipeController {
      * Responds with a 200 OK status and the list of recipes, or 404 Not Found with a result of "No recipes found".
      */
     public Handler fetchAllRecipes = ctx -> {
-        
+        String term = ctx.queryParam("term");
+        Integer page = getParamAsClassOrElse(ctx, "page", Integer.class, 1);
+        Integer pageSize = getParamAsClassOrElse(ctx, "pageSize", Integer.class, 10);
+        // Sorting params are not implemented in DAO, but included for extensibility
+        String sortBy = ctx.queryParam("sortBy");
+        String sortDirection = ctx.queryParam("sortDirection");
+        com.revature.util.Page<com.revature.model.Recipe> result = recipeService.searchRecipes(term, page, pageSize, sortBy, sortDirection);
+        if (result == null || result.getResults().isEmpty()) {
+            ctx.status(404).json("No recipes found");
+        } else {
+            ctx.status(200).json(result);
+        }
     };
 
     /**
@@ -50,7 +62,13 @@ public class RecipeController {
      * If unsuccessful, responds with a 404 status code and a result of "Recipe not found".
      */
     public Handler fetchRecipeById = ctx -> {
-        
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        java.util.Optional<com.revature.model.Recipe> recipeOpt = recipeService.findRecipe(id);
+        if (recipeOpt.isPresent()) {
+            ctx.status(200).json(recipeOpt.get());
+        } else {
+            ctx.status(404).json("Recipe not found");
+        }
     };
 
     /**
@@ -60,7 +78,15 @@ public class RecipeController {
      * If unauthorized, responds with a 401 Unauthorized status.
      */
     public Handler createRecipe = ctx -> {
-       
+        // Example: expects JSON body with name, instructions, author (chef) id
+        String token = ctx.header("Authorization");
+        if (token == null || !authService.isAuthenticated(token)) {
+            ctx.status(401).json("Unauthorized");
+            return;
+        }
+        com.revature.model.Recipe recipe = ctx.bodyAsClass(com.revature.model.Recipe.class);
+        recipeService.saveRecipe(recipe);
+        ctx.status(201).json(recipe);
     };
 
     /**
@@ -72,7 +98,13 @@ public class RecipeController {
      */
     public Handler deleteRecipe = ctx -> {
         int id = Integer.parseInt(ctx.pathParam("id"));
-        recipeService.deleteRecipe(id);
+        java.util.Optional<com.revature.model.Recipe> recipeOpt = recipeService.findRecipe(id);
+        if (recipeOpt.isPresent()) {
+            recipeService.deleteRecipe(id);
+            ctx.status(200).json("Recipe deleted successfully.");
+        } else {
+            ctx.status(404).json("Recipe not found.");
+        }
     };
 
     /**
@@ -123,3 +155,13 @@ public class RecipeController {
         app.delete("/recipes/{id}", deleteRecipe);
     }
 }
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        com.revature.model.Recipe updatedRecipe = ctx.bodyAsClass(com.revature.model.Recipe.class);
+        updatedRecipe.setId(id);
+        java.util.Optional<com.revature.model.Recipe> recipeOpt = recipeService.findRecipe(id);
+        if (recipeOpt.isPresent()) {
+            recipeService.saveRecipe(updatedRecipe);
+            ctx.status(200).json(updatedRecipe);
+        } else {
+            ctx.status(404).json("Recipe not found.");
+        }

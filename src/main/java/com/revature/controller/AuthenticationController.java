@@ -3,6 +3,7 @@ package com.revature.controller;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
+import com.revature.model.Chef;
 import com.revature.service.AuthenticationService;
 import com.revature.service.ChefService;
 
@@ -32,7 +33,8 @@ public class AuthenticationController {
      * @param authService the service used to manage authentication-related operations
      */
     public AuthenticationController(ChefService chefService, AuthenticationService authService) {
-        
+        this.chefService = chefService;
+        this.authService = authService;
     }
 
     /**
@@ -45,7 +47,11 @@ public class AuthenticationController {
      * @param ctx the Javalin context containing the chef information in the request body
      */
     public void register(Context ctx) {
-        
+        Chef chef = ctx.bodyAsClass(Chef.class);
+
+        if(chefService.usernameExist(chef.getUsername())){
+            
+        }
     }
 
     /**
