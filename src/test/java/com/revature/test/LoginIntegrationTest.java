@@ -37,7 +37,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-class LoginIntegrationTest {
+public class LoginIntegrationTest {
 
 	private static int PORT = 8082;
 	private static String BASE_URL = "http://localhost:" + PORT;

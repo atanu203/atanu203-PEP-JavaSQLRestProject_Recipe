@@ -105,14 +105,22 @@ public class IngredientController {
      */
     public void getIngredients(Context ctx) {
         String term = ctx.queryParam("term");
-        Integer page = getParamAsClassOrElse(ctx, "page", Integer.class, 1);
-        Integer pageSize = getParamAsClassOrElse(ctx, "pageSize", Integer.class, 10);
         String sortBy = ctx.queryParam("sortBy");
         String sortDirection = ctx.queryParam("sortDirection");
-        com.revature.util.Page<com.revature.model.Ingredient> result = ingredientService.searchIngredients(term, page, pageSize, sortBy, sortDirection);
-        if (result == null || result.getResults().isEmpty()) {
-            ctx.status(404).json("No ingredients found");
+        String pageParam = ctx.queryParam("page");
+        String pageSizeParam = ctx.queryParam("pageSize");
+        boolean paged = pageParam != null && pageSizeParam != null;
+        if (paged) {
+            int page = Integer.parseInt(pageParam);
+            int pageSize = Integer.parseInt(pageSizeParam);
+            com.revature.util.Page<com.revature.model.Ingredient> result = ingredientService.searchIngredients(term, page, pageSize, sortBy, sortDirection);
+            if (result == null || result.getItems().isEmpty()) {
+                ctx.status(404).json("No ingredients found");
+            } else {
+                ctx.status(200).json(result);
+            }
         } else {
+            java.util.List<com.revature.model.Ingredient> result = ingredientService.searchIngredients(term);
             ctx.status(200).json(result);
         }
     }

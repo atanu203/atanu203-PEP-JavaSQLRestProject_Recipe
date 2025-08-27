@@ -124,7 +124,7 @@ public class IngredientDAO {
      */
     public List<Ingredient> getAllIngredients() {
         List<Ingredient> ingredients = new ArrayList<>();
-        String sql = "SELECT * FROM Ingredient";
+        String sql = "SELECT * FROM Ingredient ORDER BY id ASC";
         try (var conn = connectionUtil.getConnection();
              var stmt = conn.createStatement();
              var rs = stmt.executeQuery(sql)) {
@@ -142,7 +142,12 @@ public class IngredientDAO {
      * @return a Page of Ingredient objects containing the retrieved ingredients.
      */
     public Page<Ingredient> getAllIngredients(PageOptions pageOptions) {
-        String sql = "SELECT * FROM Ingredient";
+        String sortBy = pageOptions.getSortBy() != null ? pageOptions.getSortBy() : "id";
+        String sortDirection = pageOptions.getSortDirection() != null ? pageOptions.getSortDirection() : "ASC";
+        // Only allow sorting by id or name for safety
+        if (!sortBy.equalsIgnoreCase("id") && !sortBy.equalsIgnoreCase("name")) sortBy = "id";
+        if (!sortDirection.equalsIgnoreCase("asc") && !sortDirection.equalsIgnoreCase("desc")) sortDirection = "ASC";
+        String sql = "SELECT * FROM Ingredient ORDER BY " + sortBy + " " + sortDirection;
         try (var conn = connectionUtil.getConnection();
              var stmt = conn.createStatement();
              var rs = stmt.executeQuery(sql)) {
@@ -161,7 +166,7 @@ public class IngredientDAO {
      */
     public List<Ingredient> searchIngredients(String term) {
         List<Ingredient> ingredients = new ArrayList<>();
-        String sql = "SELECT * FROM Ingredient WHERE name LIKE ?";
+        String sql = "SELECT * FROM Ingredient WHERE name LIKE ? ORDER BY id ASC";
         try (var conn = connectionUtil.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%" + term + "%");
@@ -182,7 +187,11 @@ public class IngredientDAO {
      * @return a Page of Ingredient objects containing the retrieved ingredients.
      */
     public Page<Ingredient> searchIngredients(String term, PageOptions pageOptions) {
-        String sql = "SELECT * FROM Ingredient WHERE name LIKE ?";
+        String sortBy = pageOptions.getSortBy() != null ? pageOptions.getSortBy() : "id";
+        String sortDirection = pageOptions.getSortDirection() != null ? pageOptions.getSortDirection() : "ASC";
+        if (!sortBy.equalsIgnoreCase("id") && !sortBy.equalsIgnoreCase("name")) sortBy = "id";
+        if (!sortDirection.equalsIgnoreCase("asc") && !sortDirection.equalsIgnoreCase("desc")) sortDirection = "ASC";
+        String sql = "SELECT * FROM Ingredient WHERE name LIKE ? ORDER BY " + sortBy + " " + sortDirection;
         try (var conn = connectionUtil.getConnection();
              var stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, "%" + term + "%");
@@ -205,7 +214,8 @@ public class IngredientDAO {
      * @throws SQLException if an error occurs while accessing the ResultSet.
      */
     private Ingredient mapSingleRow(ResultSet resultSet) throws SQLException {
-        return new Ingredient(resultSet.getInt("ID"), resultSet.getString("NAME"));
+        // Use lowercase column names to match most DB setups
+        return new Ingredient(resultSet.getInt("id"), resultSet.getString("name"));
     }
 
     /**
@@ -232,11 +242,14 @@ public class IngredientDAO {
      * @throws SQLException if an error occurs while accessing the ResultSet.
      */
     private Page<Ingredient> pageResults(ResultSet resultSet, PageOptions pageOptions) throws SQLException {
-    List<Ingredient> ingredients = mapRows(resultSet);
-    int offset = (pageOptions.getPageNumber() - 1) * pageOptions.getPageSize();
-    int limit = Math.min(offset + pageOptions.getPageSize(), ingredients.size());
-    List<Ingredient> subList = ingredients.subList(offset, limit);
-    return new Page<>(pageOptions.getPageNumber(), pageOptions.getPageSize(),
-        (int) Math.ceil(ingredients.size() / ((float) pageOptions.getPageSize())), ingredients.size(), subList);
+        List<Ingredient> ingredients = mapRows(resultSet);
+        int offset = (pageOptions.getPageNumber() - 1) * pageOptions.getPageSize();
+        int limit = Math.min(offset + pageOptions.getPageSize(), ingredients.size());
+        List<Ingredient> subList = new ArrayList<>();
+        if (offset < ingredients.size()) {
+            subList = ingredients.subList(offset, limit);
+        }
+        return new Page<>(pageOptions.getPageNumber(), pageOptions.getPageSize(),
+            (int) Math.ceil(ingredients.size() / ((float) pageOptions.getPageSize())), ingredients.size(), subList);
     }
 }

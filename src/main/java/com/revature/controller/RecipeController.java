@@ -1,5 +1,5 @@
-package com.revature.controller;
 
+package com.revature.controller;
 import io.javalin.http.Handler;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -32,7 +32,9 @@ public class RecipeController {
     public RecipeController(RecipeService recipeService, AuthenticationService authService) {
     this.recipeService = recipeService;
     this.authService = authService;
-    }
+
+
+}
 
     /**
      * TODO: Handler for fetching all recipes. Supports pagination, sorting, and filtering by recipe name or ingredient.
@@ -47,7 +49,7 @@ public class RecipeController {
         String sortBy = ctx.queryParam("sortBy");
         String sortDirection = ctx.queryParam("sortDirection");
         com.revature.util.Page<com.revature.model.Recipe> result = recipeService.searchRecipes(term, page, pageSize, sortBy, sortDirection);
-        if (result == null || result.getResults().isEmpty()) {
+        if (result == null || result.getItems().isEmpty()) {
             ctx.status(404).json("No recipes found");
         } else {
             ctx.status(200).json(result);
@@ -115,7 +117,16 @@ public class RecipeController {
      * If unsuccessfuly, responds with a 404 status code and a result of "Recipe not found."
      */
     public Handler updateRecipe = ctx -> {
-
+        int id = Integer.parseInt(ctx.pathParam("id"));
+        com.revature.model.Recipe updatedRecipe = ctx.bodyAsClass(com.revature.model.Recipe.class);
+        updatedRecipe.setId(id);
+        java.util.Optional<com.revature.model.Recipe> recipeOpt = recipeService.findRecipe(id);
+        if (recipeOpt.isPresent()) {
+            recipeService.saveRecipe(updatedRecipe);
+            ctx.status(200).json(updatedRecipe);
+        } else {
+            ctx.status(404).json("Recipe not found.");
+        }
     };
 
     /**
@@ -154,14 +165,7 @@ public class RecipeController {
         app.put("/recipes/{id}", updateRecipe);
         app.delete("/recipes/{id}", deleteRecipe);
     }
+
 }
-        int id = Integer.parseInt(ctx.pathParam("id"));
-        com.revature.model.Recipe updatedRecipe = ctx.bodyAsClass(com.revature.model.Recipe.class);
-        updatedRecipe.setId(id);
-        java.util.Optional<com.revature.model.Recipe> recipeOpt = recipeService.findRecipe(id);
-        if (recipeOpt.isPresent()) {
-            recipeService.saveRecipe(updatedRecipe);
-            ctx.status(200).json(updatedRecipe);
-        } else {
-            ctx.status(404).json("Recipe not found.");
-        }
+
+

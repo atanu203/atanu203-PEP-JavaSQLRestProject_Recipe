@@ -48,10 +48,12 @@ public class AuthenticationController {
      */
     public void register(Context ctx) {
         Chef chef = ctx.bodyAsClass(Chef.class);
-
-        if(chefService.usernameExist(chef.getUsername())){
-            
+        if (chefService.usernameExist(chef.getUsername())) {
+            ctx.status(409).json("Username already exists");
+            return;
         }
+        Chef registeredChef = authService.registerChef(chef);
+        ctx.status(201).json(registeredChef);
     }
 
     /**
@@ -62,7 +64,14 @@ public class AuthenticationController {
      * @param ctx the Javalin context containing the chef login credentials in the request body
      */
     public void login(Context ctx) {
-        
+        Chef chef = ctx.bodyAsClass(Chef.class);
+        String token = authService.login(chef);
+        if (token != null) {
+            ctx.header("Authorization", token);
+            ctx.status(200).json(token);
+        } else {
+            ctx.status(401).json("Invalid username or password");
+        }
     }
 
     /**
@@ -71,7 +80,11 @@ public class AuthenticationController {
      * @param ctx the Javalin context, containing the Authorization token in the request header
      */
     public void logout(Context ctx) {
-        
+        String token = ctx.header("Authorization");
+        if (token != null) {
+            authService.logout(token);
+        }
+        ctx.status(200).json("Logout successful");
     }
 
     /**

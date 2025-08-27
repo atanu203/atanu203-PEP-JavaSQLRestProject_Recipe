@@ -59,7 +59,7 @@ public class ChefDAO {
      * @return a paginated list of Chef objects
      */
     public Page<Chef> getAllChefs(PageOptions pageOptions) {
-        String sql = "SELECT * FROM Chef";
+        String sql = "SELECT * FROM Chef ORDER BY id";
         try (var conn = connectionUtil.getConnection();
              var stmt = conn.createStatement();
              var rs = stmt.executeQuery(sql)) {
@@ -67,7 +67,7 @@ public class ChefDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        //return null;
     }
 
     /**
