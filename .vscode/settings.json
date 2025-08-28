@@ -1,4 +1,3 @@
 {
-    "extensions.ignoreRecommendations": true,
-    "java.debug.settings.onBuildFailureProceed": true
+    "extensions.ignoreRecommendations": true
 }
